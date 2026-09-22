@@ -1,4 +1,9 @@
 import OpenAI from "openai";
+import type {
+	ChatCompletionMessage,
+	ChatCompletionMessageParam,
+	ChatCompletionTool,
+} from "openai/resources/chat/completions";
 
 const apiKey = process.env.OPENAI_API_KEY?.trim();
 
@@ -47,4 +52,30 @@ export async function llmClient(prompt: string): Promise<unknown> {
 			cause: error,
 		});
 	}
+}
+
+/**
+ * 将可用工具提供给 LLM，让模型判断是否需要调用工具。
+ *
+ * 这里只返回模型消息以及其中可能存在的 tool_calls，
+ * 不负责解析参数或执行真正的工具函数。
+ */
+export async function callLLMWithTools(
+	messages: ChatCompletionMessageParam[],
+	tools: ChatCompletionTool[],
+): Promise<ChatCompletionMessage> {
+	const response = await client.chat.completions.create({
+		model,
+		messages,
+		tools,
+		tool_choice: "auto",
+	});
+
+	const message = response.choices[0]?.message;
+
+	if (!message) {
+		throw new Error("LLM 没有返回消息。");
+	}
+
+	return message;
 }

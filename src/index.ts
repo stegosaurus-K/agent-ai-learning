@@ -1,14 +1,8 @@
-import { analyzeLead } from "./agents/lead-analyzer";
-import { handleLead } from "./services/sales.service";
+import { runAgent } from "./agents/lead-agent";
 
 async function main() {
-	const message =
-		"最近工作比较忙，过两个月再看看吧。课程多少钱？什么时候可以报名？";
-
-	const result = await analyzeLead(message);
-
-	console.log("线索分析结果：", result);
-	await handleLead(result);
+	await runAgent("帮我查询张三有没有咨询记录，如果咨询过，明天下午联系他");
+	// await runAgent("客户 customer_001 想看看课程资料");
 }
 
 main().catch(error => {
