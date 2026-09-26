@@ -37,7 +37,8 @@ export const tools: ChatCompletionTool[] = [
 		type: "function",
 		function: {
 			name: "create_reminder",
-			description: "当客户明确要求稍后联系时，为客户创建回访提醒",
+			description:
+				"只有当客户明确要求在某个具体时间进行一次回访时才创建提醒，例如明天下午、下周一上午。仅表达长期联系时间偏好时，不得调用此工具。",
 			parameters: {
 				type: "object",
 				properties: {
