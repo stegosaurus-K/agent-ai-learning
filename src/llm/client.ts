@@ -13,12 +13,12 @@ if (!apiKey) {
 	);
 }
 
-const client = new OpenAI({
+export const client = new OpenAI({
 	apiKey,
 	baseURL: process.env.AI_BASE_URL?.trim() || undefined,
 });
 
-const model = process.env.AI_MODEL?.trim() || "deepseek-flash";
+export const model = process.env.AI_MODEL?.trim() || "deepseek-flash";
 
 /**
  * 调用 LLM，并将模型返回的 JSON 文本转换为待校验的数据。
@@ -64,11 +64,14 @@ export async function callLLMWithTools(
 	messages: ChatCompletionMessageParam[],
 	tools: ChatCompletionTool[],
 ): Promise<ChatCompletionMessage> {
+	const toolOptions = tools.length > 0
+		? { tools, tool_choice: "auto" as const }
+		: {};
+
 	const response = await client.chat.completions.create({
 		model,
 		messages,
-		tools,
-		tool_choice: "auto",
+		...toolOptions,
 	});
 
 	const message = response.choices[0]?.message;

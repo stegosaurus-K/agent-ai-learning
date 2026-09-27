@@ -26,6 +26,7 @@ export async function extractMemory(
 - 只对当前任务有用的临时信息
 - Tool Result 或 Agent 当前执行状态
 - 用户没有明确表达、只能推测的信息
+- 单纯询问课程、价格或退费等业务问题，不等于表达长期顾虑；只有用户明确说出自己的担心或顾虑，才提取 objection
 - 日常闲聊，例如刚吃了什么
 
 请只返回下面格式的 JSON 对象，不要添加解释：

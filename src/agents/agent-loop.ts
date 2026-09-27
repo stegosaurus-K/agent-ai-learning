@@ -40,16 +40,21 @@ async function executeTool(
  */
 export async function runAgentLoop(
 	messages: ChatCompletionMessageParam[],
+	allowTools = true,
 ): Promise<void> {
 	for (let step = 1; step <= MAX_STEPS; step += 1) {
 		console.log(`\n--- Agent 第 ${step} 轮 ---`);
 
-		const message = await callLLMWithTools(messages, tools);
+		const message = await callLLMWithTools(messages, allowTools ? tools : []);
 		const toolCall = message.tool_calls?.[0];
 
 		if (!toolCall) {
 			console.log("AI:", message.content ?? "模型没有返回文本内容。");
 			return;
+		}
+
+		if (!allowTools) {
+			throw new Error("Router 未允许工具调用，拒绝执行模型返回的 Tool。");
 		}
 
 		if (toolCall.type !== "function") {

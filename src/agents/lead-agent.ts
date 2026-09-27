@@ -1,30 +1,68 @@
 import { loadMemory } from "../memory/memory.store";
 import { selectMemory } from "../memory/memory.selector";
 import { rememberUserMessage } from "../memory/memory.writer";
+import { getDocumentIndex } from "../rag/index";
+import { retrieveDocuments, type RetrievedDocument } from "../rag/retriever";
 import { runAgentLoop } from "./agent-loop";
 import { createAgentContext } from "./context";
+import { routeRequest } from "./router";
+
+const EXERCISE_DOCUMENT_YEAR = 2026;
 
 /**
- * 加载用户 Memory，运行 Agent Loop，并在任务结束后更新长期 Memory。
+ * 根据路由决策加载相关 Memory，运行 Agent Loop，并按需更新长期 Memory。
  */
 export async function runAgent(
 	userId: string,
 	userMessage: string,
 ): Promise<void> {
-	const memory = await loadMemory(userId);
+	const route = await routeRequest(userMessage);
+	console.log("路由决策:", route);
 
-	console.log("已加载 Memory:", memory);
+	const memory = route.useMemory ? await loadMemory(userId) : null;
+
+	if (route.useMemory) {
+		console.log("已加载 Memory:", memory);
+	}
 
 	const selectedMemory = memory
 		? selectMemory(memory, userMessage)
 		: null;
 
-	console.log("注入 Context 的 Memory:", selectedMemory);
+	if (route.useMemory) {
+		console.log("注入 Context 的 Memory:", selectedMemory);
+	}
 
-	const messages = createAgentContext(userMessage, selectedMemory);
-	await runAgentLoop(messages);
+	let knowledge: RetrievedDocument[] | null = null;
 
-	const updatedMemory = await rememberUserMessage(userId, userMessage);
+	if (route.useRAG) {
+		const index = await getDocumentIndex();
+		knowledge = await retrieveDocuments(
+			userMessage,
+			index,
+			2,
+			EXERCISE_DOCUMENT_YEAR,
+		);
+		console.log(
+			"检索到的知识:",
+			knowledge.map(({ document, score }) => ({
+				title: document.title,
+				year: document.year,
+				score,
+			})),
+		);
+	}
 
-	console.log("更新后的 Memory:", updatedMemory);
+	const messages = createAgentContext(
+		userMessage,
+		selectedMemory,
+		knowledge,
+		route.allowTools ? userId : null,
+	);
+	await runAgentLoop(messages, route.allowTools);
+
+	if (route.useMemory) {
+		const updatedMemory = await rememberUserMessage(userId, userMessage);
+		console.log("更新后的 Memory:", updatedMemory);
+	}
 }
